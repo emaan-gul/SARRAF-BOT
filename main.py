@@ -38,6 +38,9 @@ logging.basicConfig(
 logger = logging.getLogger("sarrafbot.ingest")
 
 VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN", "hisaab_verify")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+FREE_HISTORY_DAYS = 90
 
 
 def _redis_settings() -> RedisSettings:
@@ -50,14 +53,40 @@ def _redis_settings() -> RedisSettings:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Open one shared ARQ Redis pool for the app's lifetime."""
-    app.state.arq = await create_pool(_redis_settings())
-    logger.info("Connected to Redis queue.")
+    """Open one shared ARQ Redis pool for the app's lifetime. Resilient to
+    Redis being unavailable (e.g. local dev without a Redis subscription) --
+    the app still starts, but webhook/reminder endpoints will explicitly
+    report unavailable rather than silently dropping messages."""
+    try:
+        app.state.arq = await create_pool(_redis_settings())
+        logger.info("Connected to Redis queue.")
+    except Exception as exc:  # noqa: BLE001
+        app.state.arq = None
+        logger.warning(
+            "Redis unavailable at startup (%s) -- webhook/reminder endpoints "
+            "will report unavailable until it's back. Dashboard API endpoints "
+            "are unaffected.", exc
+        )
     yield
-    await app.state.arq.aclose()
+    if app.state.arq is not None:
+        await app.state.arq.aclose()
 
 
 app = FastAPI(title="SarrafBot Ingestion", version="3.0.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://emaan-gul.github.io",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 # --------------------------------------------------------------------------- #
