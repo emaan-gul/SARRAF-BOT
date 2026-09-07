@@ -13,14 +13,17 @@ import os
 import sys
 import asyncio
 import logging
+import datetime
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import PlainTextResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from arq import create_pool
 from arq.connections import RedisSettings
+from supabase import create_client, Client
 
 # Windows asyncio + TLS fix (Upstash rediss://). Harmless on Linux.
 if sys.platform == "win32":
