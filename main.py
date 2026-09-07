@@ -182,20 +182,21 @@ def _valid_dashboard_token(token: str):
 
 
 @app.get("/api/dashboard/exchange")
-async def dashboard_exchange(token: str, response: Response):
+async def dashboard_exchange(token: str, request: Request, response: Response):
     """Validate a dashboard magic-link token and set it as an HttpOnly
     session cookie, so the token does not have to sit in the visible URL
-    for the rest of the session."""
+    for the rest of the session. Secure flag is only set when the request
+    itself arrived over HTTPS -- automatically off for local HTTP testing,
+    on in production behind Railway's HTTPS."""
     row = _valid_dashboard_token(token)
     if not row:
         raise HTTPException(status_code=401, detail="Invalid or expired link")
     response.set_cookie(
         key="sarrafbot_session", value=token,
-        httponly=True, secure=True, samesite="strict",
+        httponly=True, secure=(request.url.scheme == "https"), samesite="strict",
         max_age=60 * 60 * 24,
     )
     return {"status": "ok"}
-
 
 @app.get("/api/dashboard/data")
 async def dashboard_data(request: Request):
