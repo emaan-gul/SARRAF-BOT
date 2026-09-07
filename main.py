@@ -156,3 +156,137 @@ async def trigger_reminders():
 @app.get("/")
 async def health():
     return {"status": "alive", "service": "sarrafbot-ingest"}
+
+
+def _valid_dashboard_token(token: str):
+    """Look up a dashboard token; return its row if it exists and has not
+    expired, else None. Shared by both the exchange and data endpoints."""
+    rows = (
+        supabase.table("dashboard_tokens")
+        .select("user_phone, expires_at")
+        .eq("token", token)
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not rows:
+        return None
+    expires_at = rows[0].get("expires_at")
+    try:
+        exp = datetime.datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        if exp < datetime.datetime.now(datetime.timezone.utc):
+            return None
+    except Exception:  # noqa: BLE001
+        return None
+    return rows[0]
+
+
+@app.get("/api/dashboard/exchange")
+async def dashboard_exchange(token: str, response: Response):
+    """Validate a dashboard magic-link token and set it as an HttpOnly
+    session cookie, so the token does not have to sit in the visible URL
+    for the rest of the session."""
+    row = _valid_dashboard_token(token)
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid or expired link")
+    response.set_cookie(
+        key="sarrafbot_session", value=token,
+        httponly=True, secure=True, samesite="strict",
+        max_age=60 * 60 * 24,
+    )
+    return {"status": "ok"}
+
+
+@app.get("/api/dashboard/data")
+async def dashboard_data(request: Request):
+    """Return a snapshot of the authenticated user's data for the
+    dashboard: balance, recent transactions, budgets, savings goals,
+    active reminders, and current tier. Read-only -- editing happens
+    through the bot, not here, so this stays a thin, low-risk endpoint."""
+    token = request.cookies.get("sarrafbot_session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    row = _valid_dashboard_token(token)
+    if not row:
+        raise HTTPException(status_code=401, detail="Session expired")
+    user = row["user_phone"]
+
+    tier_rows = (
+        supabase.table("subscriptions")
+        .select("tier, expires_at")
+        .eq("user_phone", user)
+        .limit(1)
+        .execute()
+        .data
+    )
+    tier = "free"
+    if tier_rows and tier_rows[0].get("tier") == "premium":
+        exp = tier_rows[0].get("expires_at")
+        if not exp:
+            tier = "premium"
+        else:
+            try:
+                exp_dt = datetime.datetime.fromisoformat(exp.replace("Z", "+00:00"))
+                if exp_dt >= datetime.datetime.now(datetime.timezone.utc):
+                    tier = "premium"
+            except Exception:  # noqa: BLE001
+                pass
+
+    if tier == "free":
+        cutoff = (datetime.date.today() - datetime.timedelta(days=FREE_HISTORY_DAYS)).isoformat()
+    else:
+        cutoff = "2000-01-01"
+
+    expenses = (
+        supabase.table("expenses")
+        .select("date, type, category, description, amount")
+        .eq("user_phone", user)
+        .gte("date", cutoff)
+        .order("date", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    income_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "income")
+    expense_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "expense")
+
+    budgets = (
+        supabase.table("budgets")
+        .select("category, amount, period")
+        .eq("user_phone", user)
+        .execute()
+        .data
+        or []
+    )
+    goals = (
+        supabase.table("savings_goals")
+        .select("goal_name, target_amount, saved_amount")
+        .eq("user_phone", user)
+        .order("created_at", desc=True)
+        .execute()
+        .data
+        or []
+    )
+    reminders = (
+        supabase.table("reminders")
+        .select("title, due_date, recurrence")
+        .eq("user_phone", user)
+        .eq("is_completed", False)
+        .order("due_date")
+        .execute()
+        .data
+        or []
+    )
+
+    return {
+        "tier": tier,
+        "balance": {
+            "income": income_total,
+            "expense": expense_total,
+            "net": income_total - expense_total,
+        },
+        "transactions": expenses[:50],
+        "budgets": budgets,
+        "goals": goals,
+        "reminders": reminders,
+    }
