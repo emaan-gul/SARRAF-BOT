@@ -1541,6 +1541,25 @@ def handle_get_reminders(user: str, lang: str = "en") -> str:
     return "\n".join(lines)
 
 
+
+DASHBOARD_BASE_URL = "https://emaan-gul.github.io/SARRAF-BOT/dashboard.html"
+
+
+def handle_get_dashboard_link(user: str, lang: str = "en") -> str:
+    """Generate a fresh 24-hour dashboard link for the user. Any previous
+    link for this user is invalidated first, so only one link is ever
+    active at a time."""
+    supabase.table("dashboard_tokens").delete().eq("user_phone", user).execute()
+    token = secrets.token_urlsafe(32)
+    expires_at = (datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=24)).isoformat()
+    supabase.table("dashboard_tokens").insert({
+        "token": token,
+        "user_phone": user,
+        "expires_at": expires_at,
+    }).execute()
+    link = f"{DASHBOARD_BASE_URL}?token={token}"
+    return t(lang, "dashboard_link_sent", link=link)
+
 def handle_list_transactions(user: str, item: dict[str, Any], lang: str = "en") -> str:
     """List individual recent transactions in chronological order (most
     recent first) -- distinct from `query`, which returns category-grouped
