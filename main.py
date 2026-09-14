@@ -181,37 +181,20 @@ def _valid_dashboard_token(token: str):
     return rows[0]
 
 
-@app.get("/api/dashboard/exchange")
-async def dashboard_exchange(token: str, request: Request, response: Response):
-    """Validate a dashboard magic-link token and set it as an HttpOnly
-    session cookie, so the token does not have to sit in the visible URL
-    for the rest of the session. Secure flag is only set when the request
-    itself arrived over HTTPS -- automatically off for local HTTP testing,
-    on in production behind Railway's HTTPS."""
-    row = _valid_dashboard_token(token)
-    if not row:
-        raise HTTPException(status_code=401, detail="Invalid or expired link")
-    response.set_cookie(
-        key="sarrafbot_session", value=token,
-        httponly=True, secure=(request.url.scheme == "https"), samesite="none",
-        max_age=60 * 60 * 24,
-    )
-    return {"status": "ok"}
-
 @app.get("/api/dashboard/data")
-async def dashboard_data(request: Request):
+async def dashboard_data(token: str):
     """Return a snapshot of the authenticated user's data for the
     dashboard: balance, recent transactions, budgets, savings goals,
     active reminders, and current tier. Read-only -- editing happens
-    through the bot, not here, so this stays a thin, low-risk endpoint."""
-    token = request.cookies.get("sarrafbot_session")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+    through the bot, not here, so this stays a thin, low-risk endpoint.
+    Token is passed directly as a query param (not a cookie) -- simpler
+    and avoids cross-site cookie quirks across the github.io/railway.app
+    domain split, at the cost of the token being visible in this one
+    network request each time (24-hour expiry, read-only, low-risk)."""
     row = _valid_dashboard_token(token)
     if not row:
-        raise HTTPException(status_code=401, detail="Session expired")
+        raise HTTPException(status_code=401, detail="Invalid or expired link")
     user = row["user_phone"]
-
     tier_rows = (
         supabase.table("subscriptions")
         .select("tier, expires_at")
