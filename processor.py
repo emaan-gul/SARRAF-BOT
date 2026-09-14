@@ -1879,6 +1879,8 @@ def background_worker(
                 replies.append(handle_visualize(user, item, lang))
             elif intent == "get_reminders":
                 replies.append(handle_get_reminders(user, lang))
+            elif intent == "get_dashboard_link":
+                replies.append(handle_get_dashboard_link(user, lang))
             elif intent == "list_transactions":
                 replies.append(handle_list_transactions(user, item, lang))
             else:
