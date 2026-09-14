@@ -252,6 +252,10 @@ SCHEMA — choose exactly ONE "intent" per item:
                   // user wants to SEE all their active reminders, e.g. "show me my
                   // reminders", "what reminders do I have", "list my reminders",
                   // "meri yaad dihaniyan dikhao". NOT the same as set_reminder.
+  get_dashboard_link: { "intent":"get_dashboard_link" }
+                  // user wants a link to a detailed web view of their data, e.g.
+                  // "show me my dashboard", "detailed view", "open my dashboard",
+                  // "web view please". Gives a link, does NOT show data inline.
   list_transactions: { "intent":"list_transactions", "timeframe":<string|null>,
                   "start_date":<YYYY-MM-DD|null>, "end_date":<YYYY-MM-DD|null>,
                   "limit":<number|null> }
