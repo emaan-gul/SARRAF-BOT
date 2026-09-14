@@ -193,7 +193,7 @@ async def dashboard_exchange(token: str, request: Request, response: Response):
         raise HTTPException(status_code=401, detail="Invalid or expired link")
     response.set_cookie(
         key="sarrafbot_session", value=token,
-        httponly=True, secure=(request.url.scheme == "https"), samesite="strict",
+        httponly=True, secure=(request.url.scheme == "https"), samesite="none",
         max_age=60 * 60 * 24,
     )
     return {"status": "ok"}
