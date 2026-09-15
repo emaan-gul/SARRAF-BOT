@@ -145,15 +145,24 @@ function render(data){
       <div class="bar-amt">${fmt(amt)}</div>
     </div>`).join('') : '<div class="empty">No spending yet.</div>';
 
-  const budgetHtml = data.budgets.length ? data.budgets.map(b=>{
-    const spentForCat = b.spent || 0;
-    const cls = budgetBarClass(spentForCat, b.amount);
-    const pct = Math.min(100, (spentForCat/b.amount*100)||0);
-    return `<div class="progress-item">
-      <div class="progress-top"><span class="name">${b.category} <span style="font-weight:400;color:var(--text-dim);font-size:0.78em;">&middot; ${b.period_label}</span></span><span class="nums">${fmt(spentForCat)} / ${fmt(b.amount)} PKR</span></div>
-      <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join('') : '<div class="empty">No budgets set yet.</div>';
+  const budgetGroups = {};
+  data.budgets.forEach(b => {
+    const key = b.period_label;
+    if(!budgetGroups[key]) budgetGroups[key] = [];
+    budgetGroups[key].push(b);
+  });
+  const budgetHtml = data.budgets.length ? Object.entries(budgetGroups).map(([label, group]) => {
+    const rows = group.map(b=>{
+      const spentForCat = b.spent || 0;
+      const cls = budgetBarClass(spentForCat, b.amount);
+      const pct = Math.min(100, (spentForCat/b.amount*100)||0);
+      return `<div class="progress-item">
+        <div class="progress-top"><span class="name">${b.category}</span><span class="nums">${fmt(spentForCat)} / ${fmt(b.amount)} PKR</span></div>
+        <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+    return `<div style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;">${label}</div>${rows}`;
+  }).join('<div style="height:16px"></div>') : '<div class="empty">No budgets set yet.</div>';
 
   const goalHtml = data.goals.length ? data.goals.map(g=>{
     const pct = Math.min(100, (g.saved_amount/g.target_amount*100)||0);
