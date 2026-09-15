@@ -169,13 +169,21 @@ function render(data){
       <span class="reminder-meta">${r.due_date || '—'}${r.recurrence && r.recurrence!=='none' ? ' · '+r.recurrence : ''}</span>
     </div>`).join('') : '<div class="empty">No active reminders.</div>';
 
-  const txHtml = data.transactions.length ? data.transactions.slice(0,15).map(t=>`
-    <tr>
+  let txLastMonth = '';
+  const txHtml = data.transactions.length ? data.transactions.slice(0,15).map(t=>{
+    const monthLabel = new Date(t.date).toLocaleDateString('en-US', {month:'long', year:'numeric'});
+    let header = '';
+    if(monthLabel !== txLastMonth){
+      header = `<tr><td colspan="4" style="padding-top:14px;padding-bottom:6px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-dim);border-top:none;">${monthLabel}</td></tr>`;
+      txLastMonth = monthLabel;
+    }
+    return `${header}<tr>
       <td>${t.date}</td>
       <td class="desc">${t.description || t.category}</td>
       <td><span class="cat-pill">${t.category}</span></td>
-      <td class="amt ${t.type}">${t.type==='expense'?'−':'+'}${fmt(t.amount)}</td>
-    </tr>`).join('') : '';
+      <td class="amt ${t.type}">${t.type==='expense'?'&minus;':'+'}${fmt(t.amount)}</td>
+    </tr>`;
+  }).join('') : '';
 
   const upsell = data.tier === 'free' ? `
     <div class="upsell">
