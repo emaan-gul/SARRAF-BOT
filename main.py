@@ -267,7 +267,13 @@ async def dashboard_data(token: str):
             or []
         )
         spent = sum((r.get("amount") or 0) for r in period_rows if r.get("type") == "expense")
-        budgets.append({**b, "spent": spent})
+        if period == "daily":
+            period_label = "Today"
+        elif period == "weekly":
+            period_label = "This week"
+        else:
+            period_label = today.strftime("%B %Y")
+        budgets.append({**b, "spent": spent, "period_label": period_label})
     goals = (
         supabase.table("savings_goals")
         .select("goal_name, target_amount, saved_amount")
@@ -288,8 +294,15 @@ async def dashboard_data(token: str):
         or []
     )
 
+    if tier == "free":
+        cutoff_dt = datetime.date.today() - datetime.timedelta(days=FREE_HISTORY_DAYS)
+        range_label = f"Since {cutoff_dt.strftime('%B %d, %Y')}"
+    else:
+        range_label = "All time"
+
     return {
         "tier": tier,
+        "range_label": range_label,
         "balance": {
             "income": income_total,
             "expense": expense_total,
