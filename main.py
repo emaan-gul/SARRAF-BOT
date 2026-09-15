@@ -234,7 +234,7 @@ async def dashboard_data(token: str):
     income_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "income")
     expense_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "expense")
 
-    budgets = (
+    budgets_raw = (
         supabase.table("budgets")
         .select("category, amount, period")
         .eq("user_phone", user)
@@ -242,6 +242,32 @@ async def dashboard_data(token: str):
         .data
         or []
     )
+    # Each budget's "spent" is scoped to that budget's OWN period (daily/
+    # weekly/monthly) -- mirrors processor.py's _budget_period_bounds so a
+    # transaction from a previous month never counts against this month's
+    # budget, matching what the bot itself reports in chat.
+    budgets = []
+    today = datetime.date.today()
+    for b in budgets_raw:
+        period = (b.get("period") or "monthly").lower()
+        if period == "daily":
+            period_start = today.isoformat()
+        elif period == "weekly":
+            period_start = (today - datetime.timedelta(days=today.weekday())).isoformat()
+        else:
+            period_start = today.replace(day=1).isoformat()
+        period_rows = (
+            supabase.table("expenses")
+            .select("amount, type")
+            .eq("user_phone", user)
+            .eq("category", b.get("category"))
+            .gte("date", period_start)
+            .execute()
+            .data
+            or []
+        )
+        spent = sum((r.get("amount") or 0) for r in period_rows if r.get("type") == "expense")
+        budgets.append({**b, "spent": spent})
     goals = (
         supabase.table("savings_goals")
         .select("goal_name, target_amount, saved_amount")
