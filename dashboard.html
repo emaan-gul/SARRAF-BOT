@@ -150,7 +150,7 @@ function render(data){
     const cls = budgetBarClass(spentForCat, b.amount);
     const pct = Math.min(100, (spentForCat/b.amount*100)||0);
     return `<div class="progress-item">
-      <div class="progress-top"><span class="name">${b.category}</span><span class="nums">${fmt(spentForCat)} / ${fmt(b.amount)} PKR</span></div>
+      <div class="progress-top"><span class="name">${b.category} <span style="font-weight:400;color:var(--text-dim);font-size:0.78em;">&middot; ${b.period_label}</span></span><span class="nums">${fmt(spentForCat)} / ${fmt(b.amount)} PKR</span></div>
       <div class="progress-track"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div>
     </div>`;
   }).join('') : '<div class="empty">No budgets set yet.</div>';
@@ -187,7 +187,7 @@ function render(data){
     ${upsell}
     <div class="top-row" style="margin-top:${data.tier==='free'?'20px':'0'}">
       <div class="card">
-        <h2>Balance</h2>
+        <h2>Balance <span style="font-weight:400;color:var(--text-dim);font-size:0.78em;">&middot; ${data.range_label}</span></h2>
         <div class="balance-figures">
           <div><span class="fig-label">Income</span><span class="fig-value income">${fmt(data.balance.income)}</span></div>
           <div><span class="fig-label">Expenses</span><span class="fig-value expense">${fmt(data.balance.expense)}</span></div>
