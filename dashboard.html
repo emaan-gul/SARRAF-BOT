@@ -146,7 +146,7 @@ function render(data){
     </div>`).join('') : '<div class="empty">No spending yet.</div>';
 
   const budgetHtml = data.budgets.length ? data.budgets.map(b=>{
-    const spentForCat = catTotals[b.category] || 0;
+    const spentForCat = b.spent || 0;
     const cls = budgetBarClass(spentForCat, b.amount);
     const pct = Math.min(100, (spentForCat/b.amount*100)||0);
     return `<div class="progress-item">
