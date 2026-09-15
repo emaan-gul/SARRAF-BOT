@@ -217,17 +217,16 @@ async function init(){
   const params = new URLSearchParams(window.location.search);
   const token = params.get('token');
 
-  if(token){
-    try{
-      const res = await fetch(`${API_BASE}/api/dashboard/exchange?token=${encodeURIComponent(token)}`, {credentials:'include'});
-      if(!res.ok){ renderError('This link is invalid or has expired.'); return; }
-      window.history.replaceState({}, '', window.location.pathname);
-    } catch(e){ renderError('Could not reach the server.'); return; }
-  }
+  if(!token){ renderError('No dashboard link found. Ask SarrafBot for one on WhatsApp.'); return; }
+
+  // Clean the token out of the visible URL immediately -- we keep it only
+  // in this JS variable for the rest of the page's life, not in the
+  // address bar or browser history.
+  window.history.replaceState({}, '', window.location.pathname);
 
   try{
-    const dataRes = await fetch(`${API_BASE}/api/dashboard/data`, {credentials:'include'});
-    if(!dataRes.ok){ renderError('Your session has expired.'); return; }
+    const dataRes = await fetch(`${API_BASE}/api/dashboard/data?token=${encodeURIComponent(token)}`);
+    if(!dataRes.ok){ renderError('This link is invalid or has expired.'); return; }
     const data = await dataRes.json();
     render(data);
   } catch(e){ renderError('Could not reach the server.'); }
