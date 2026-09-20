@@ -309,6 +309,9 @@ SCHEMA — choose exactly ONE "intent" per item:
                   // user wants a link to a detailed web view of their data, e.g.
                   // "show me my dashboard", "detailed view", "open my dashboard",
                   // "web view please". Gives a link, does NOT show data inline.
+  get_referral_link: { "intent":"get_referral_link" }
+                  // user wants to invite/refer a friend, e.g. "invite a friend",
+                  // "referral link", "share sarrafbot", "refer someone".
   list_transactions: { "intent":"list_transactions", "timeframe":<string|null>,
                   "start_date":<YYYY-MM-DD|null>, "end_date":<YYYY-MM-DD|null>,
                   "limit":<number|null> }
