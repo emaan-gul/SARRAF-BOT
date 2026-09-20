@@ -181,6 +181,74 @@ def _valid_dashboard_token(token: str):
     return rows[0]
 
 
+CATEGORY_LABELS_UR = {
+    "Food & Dining": "کھانا پینا",
+    "Groceries": "گروسری",
+    "Transport": "ٹرانسپورٹ",
+    "Housing & Rent": "کرایہ و رہائش",
+    "Utilities & Bills": "بلز",
+    "Shopping": "شاپنگ",
+    "Health & Medical": "صحت",
+    "Personal Care": "ذاتی نگہداشت",
+    "Entertainment": "تفریح",
+    "Education": "تعلیم",
+    "Travel": "سفر",
+    "Gifts & Donations": "تحائف و عطیات",
+    "Family & Kids": "خاندان و بچے",
+    "Financial": "مالیاتی",
+    "Business & Work": "کاروبار",
+    "Other": "دیگر",
+}
+CATEGORY_LABELS_ROMAN_UR = {
+    "Food & Dining": "Khana Peena",
+    "Groceries": "Grocery",
+    "Transport": "Transport",
+    "Housing & Rent": "Kiraya o Rehaish",
+    "Utilities & Bills": "Bills",
+    "Shopping": "Shopping",
+    "Health & Medical": "Sehat",
+    "Personal Care": "Zaati Nigehdasht",
+    "Entertainment": "Tafreeh",
+    "Education": "Taleem",
+    "Travel": "Safar",
+    "Gifts & Donations": "Tohfay o Atiyaat",
+    "Family & Kids": "Khandaan o Bachay",
+    "Financial": "Maaliyaati",
+    "Business & Work": "Karobar",
+    "Other": "Deegar",
+}
+CATEGORY_LABELS_PA = {
+    "Food & Dining": "Khana Peena",
+    "Groceries": "Grocery",
+    "Transport": "Transport",
+    "Housing & Rent": "Kiraya te Rehaish",
+    "Utilities & Bills": "Bills",
+    "Shopping": "Shopping",
+    "Health & Medical": "Sehat",
+    "Personal Care": "Zaati Dekhbhal",
+    "Entertainment": "Tafreeh",
+    "Education": "Taleem",
+    "Travel": "Safar",
+    "Gifts & Donations": "Tohfe te Khairat",
+    "Family & Kids": "Parivar te Bachche",
+    "Financial": "Maali",
+    "Business & Work": "Karobar",
+    "Other": "Hor",
+}
+
+
+def _translate_category(cat: str, lang: str) -> str:
+    """Translate a stored (always-English) category name for display,
+    based on the viewer's language."""
+    if lang == "ur":
+        return CATEGORY_LABELS_UR.get(cat, cat)
+    if lang == "roman_ur":
+        return CATEGORY_LABELS_ROMAN_UR.get(cat, cat)
+    if lang == "pa":
+        return CATEGORY_LABELS_PA.get(cat, cat)
+    return cat
+
+
 @app.get("/api/dashboard/data")
 async def dashboard_data(token: str):
     """Return a snapshot of the authenticated user's data for the
