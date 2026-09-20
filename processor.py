@@ -1686,6 +1686,18 @@ def handle_get_dashboard_link(user: str, lang: str = "en") -> str:
     link = f"{DASHBOARD_BASE_URL}?token={token}"
     return t(lang, "dashboard_link_sent", link=link)
 
+
+
+BOT_WHATSAPP_NUMBER = "15551561756"
+
+
+def handle_get_referral_link(user: str, lang: str = "en") -> str:
+    """Generate a shareable WhatsApp deep-link. When a friend taps it,
+    WhatsApp opens a chat with the bot pre-filled with a referral code
+    (their own phone number) -- caught and recorded before normal
+    message processing, in the webhook/background_worker entry point."""
+    link = f"https://wa.me/{BOT_WHATSAPP_NUMBER}?text=REF-{user}"
+    return t(lang, "referral_link_sent", link=link)
 def handle_list_transactions(user: str, item: dict[str, Any], lang: str = "en") -> str:
     """List individual recent transactions in chronological order (most
     recent first) -- distinct from `query`, which returns category-grouped
@@ -2007,6 +2019,8 @@ def background_worker(
                 replies.append(handle_get_reminders(user, lang))
             elif intent == "get_dashboard_link":
                 replies.append(handle_get_dashboard_link(user, lang))
+            elif intent == "get_referral_link":
+                replies.append(handle_get_referral_link(user, lang))
             elif intent == "list_transactions":
                 replies.append(handle_list_transactions(user, item, lang))
             else:
