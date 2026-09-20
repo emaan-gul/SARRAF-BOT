@@ -995,7 +995,7 @@ def _budget_status(user: str, category: str, lang: str = "en") -> Optional[str]:
             flag = t(lang, "over_budget")
         elif pct >= 80:
             flag = t(lang, "near_limit")
-        return t(lang, "budget_status", cat=category, spent=spent, limit=limit, flag=flag)
+        return t(lang, "budget_status", cat=_translate_category(category, lang), spent=spent, limit=limit, flag=flag)
     except Exception as exc:  # noqa: BLE001
         logger.error("budget status failed: %s", exc)
         return None
