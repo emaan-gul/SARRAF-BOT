@@ -1471,7 +1471,7 @@ def handle_query(user: str, item: dict[str, Any], lang: str = "en") -> str:
     expenses = [r for r in rows if r.get("type") == "expense"]
     total = sum((r.get("amount") or 0) for r in expenses)
 
-    scope = item.get("category") or t(lang, "all_categories")
+    scope = _translate_category(item["category"], lang) if item.get("category") else t(lang, "all_categories")
 
     if not expenses:
         return t(lang, "no_expenses", scope=scope, when=when)
@@ -1485,7 +1485,7 @@ def handle_query(user: str, item: dict[str, Any], lang: str = "en") -> str:
     # Sort biggest first; cap the list so long histories stay readable.
     items = sorted(grouped.items(), key=lambda kv: kv[1], reverse=True)
     shown = items[:10]
-    lines = [f"• {label}: {amt:g} PKR" for label, amt in shown]
+    lines = [f"• {_translate_category(label, lang)}: {amt:g} PKR" for label, amt in shown]
     if len(items) > len(shown):
         lines.append(t(lang, "and_more", n=len(items) - len(shown)))
 
