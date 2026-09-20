@@ -1495,33 +1495,82 @@ def handle_query(user: str, item: dict[str, Any], lang: str = "en") -> str:
 
 
 
+def _render_urdu_chart_pil(labels: list[str], values: list[float], title: str) -> bytes:
+    """Render the Urdu spending chart with PIL instead of matplotlib.
+    Matplotlib does not reliably shape/reorder Arabic-script text across
+    environments (confirmed directly: identical code rendered correctly in
+    one environment and garbled in another) -- PIL's raqm-based text layout
+    handles this correctly and consistently, using the same Amiri font
+    already bundled for PDF exports. Labels are passed RAW (not manually
+    reshaped) -- PIL/raqm shapes and reorders automatically; reshaping first
+    double-processes the text and corrupts it."""
+    font_path = str(Path(__file__).parent / "Amiri-Regular.ttf")
+    W, H = 900, max(320, 100 + len(labels) * 90)
+    img = Image.new("RGB", (W, H), "#FAF8F2")
+    draw = ImageDraw.Draw(img)
+
+    title_font = ImageFont.truetype(font_path, 28)
+    label_font = ImageFont.truetype(font_path, 24)
+    num_font = ImageFont.truetype(font_path, 16)
+    axis_font = ImageFont.truetype(font_path, 14)
+
+    tb = draw.textbbox((0, 0), title, font=title_font)
+    draw.text(((W - (tb[2] - tb[0])) // 2, 24), title, font=title_font, fill="#1B2A41")
+
+    chart_left = 250
+    chart_right = W - 90
+    max_val = max(values) if values else 1
+    bar_h = 46
+    gap = 42
+    y = 90
+
+    for label, val in zip(labels, values):
+        bar_w = max(2, int((val / max_val) * (chart_right - chart_left)))
+        draw.rectangle([chart_left, y, chart_left + bar_w, y + bar_h], fill="#1F5D42")
+        draw.text((chart_left + bar_w + 10, y + bar_h // 2), f"{val:g}", font=num_font, fill="#1B2A41", anchor="lm")
+        lb = draw.textbbox((0, 0), label, font=label_font)
+        label_w = lb[2] - lb[0]
+        max_label_w = chart_left - 30
+        while label_w > max_label_w and len(label) > 3:
+            label = label[:-1]
+            lb = draw.textbbox((0, 0), label, font=label_font)
+            label_w = lb[2] - lb[0]
+        draw.text((chart_left - 15 - label_w, y + bar_h // 2), label, font=label_font, fill="#1B2A41", anchor="lm")
+        y += bar_h + gap
+
+    axis_y = y - gap + bar_h + 20
+    draw.line([chart_left, axis_y, chart_right, axis_y], fill="#5B5B52", width=1)
+    n_ticks = 5
+    for i in range(n_ticks + 1):
+        tick_val = round(max_val * i / n_ticks / 10) * 10
+        tick_x = chart_left + int((chart_right - chart_left) * i / n_ticks)
+        draw.text((tick_x, axis_y + 8), str(tick_val), font=axis_font, fill="#5B5B52", anchor="ma")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return buf.getvalue()
+
+
 def _render_expense_chart(labels: list[str], values: list[float], title: str, lang: str = "en") -> bytes:
     """Render a horizontal bar chart of spending by category, styled to
-    match the brand, and return it as PNG bytes ready to upload. For Urdu,
-    loads the same Amiri font and reshape/bidi treatment used for PDF
-    exports -- matplotlib does not shape or reorder Arabic-script text on
-    its own, so without this the labels would render disconnected/reversed."""
+    match the brand, and return it as PNG bytes ready to upload. Urdu uses
+    a separate PIL-based renderer (_render_urdu_chart_pil) instead of
+    matplotlib -- see that function's docstring for why."""
+    if lang == "ur":
+        translated = [CATEGORY_LABELS_UR.get(lbl, lbl) for lbl in labels]
+        return _render_urdu_chart_pil(translated, values, title)
+
     fig, ax = plt.subplots(figsize=(6, max(3, 0.5 * len(labels) + 1)), dpi=150)
     fig.patch.set_facecolor("#FAF8F2")
     ax.set_facecolor("#FAF8F2")
 
-    font_kwargs = {}
-    xlabel = "PKR"
-    if lang == "ur":
-        font_path = Path(__file__).parent / "Amiri-Regular.ttf"
-        amiri = FontProperties(fname=str(font_path))
-        font_kwargs = {"fontproperties": amiri}
-        labels = [_fix_rtl(CATEGORY_LABELS_UR.get(lbl, lbl)) for lbl in labels]
-        title = _fix_rtl(title)
-        xlabel = _fix_rtl("روپے")
-
     y_pos = range(len(labels))
     ax.barh(y_pos, values, color="#1F5D42", height=0.6)
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(labels, fontsize=10, color="#1B2A41", **font_kwargs)
+    ax.set_yticklabels(labels, fontsize=10, color="#1B2A41")
     ax.invert_yaxis()  # largest category at the top
-    ax.set_xlabel(xlabel, fontsize=9, color="#5B5B52", **font_kwargs)
-    ax.set_title(title, fontsize=13, color="#1B2A41", fontweight="bold", pad=12, **font_kwargs)
+    ax.set_xlabel("PKR", fontsize=9, color="#5B5B52")
+    ax.set_title(title, fontsize=13, color="#1B2A41", fontweight="bold", pad=12)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["left"].set_visible(False)
@@ -1534,6 +1583,7 @@ def _render_expense_chart(labels: list[str], values: list[float], title: str, la
     plt.savefig(buf, format="png", facecolor=fig.get_facecolor())
     plt.close(fig)
     return buf.getvalue()
+
 
 
 def handle_visualize(user: str, item: dict[str, Any], lang: str = "en") -> str:
