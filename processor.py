@@ -152,6 +152,57 @@ CATEGORY_LABELS_UR = {
     "Business & Work": "کاروبار",
     "Other": "دیگر",
 }
+CATEGORY_LABELS_ROMAN_UR = {
+    "Food & Dining": "Khana Peena",
+    "Groceries": "Grocery",
+    "Transport": "Transport",
+    "Housing & Rent": "Kiraya o Rehaish",
+    "Utilities & Bills": "Bills",
+    "Shopping": "Shopping",
+    "Health & Medical": "Sehat",
+    "Personal Care": "Zaati Nigehdasht",
+    "Entertainment": "Tafreeh",
+    "Education": "Taleem",
+    "Travel": "Safar",
+    "Gifts & Donations": "Tohfay o Atiyaat",
+    "Family & Kids": "Khandaan o Bachay",
+    "Financial": "Maaliyaati",
+    "Business & Work": "Karobar",
+    "Other": "Deegar",
+}
+CATEGORY_LABELS_PA = {
+    "Food & Dining": "Khana Peena",
+    "Groceries": "Grocery",
+    "Transport": "Transport",
+    "Housing & Rent": "Kiraya te Rehaish",
+    "Utilities & Bills": "Bills",
+    "Shopping": "Shopping",
+    "Health & Medical": "Sehat",
+    "Personal Care": "Zaati Dekhbhal",
+    "Entertainment": "Tafreeh",
+    "Education": "Taleem",
+    "Travel": "Safar",
+    "Gifts & Donations": "Tohfe te Khairat",
+    "Family & Kids": "Parivar te Bachche",
+    "Financial": "Maali",
+    "Business & Work": "Karobar",
+    "Other": "Hor",
+}
+
+
+def _translate_category(cat: str, lang: str) -> str:
+    """Translate a stored (always-English) category name for display,
+    based on the recipient's language. Used anywhere a category name is
+    inserted into a user-facing reply, so chat text matches the language
+    the rest of the reply is already in."""
+    if lang == "ur":
+        return CATEGORY_LABELS_UR.get(cat, cat)
+    if lang == "roman_ur":
+        return CATEGORY_LABELS_ROMAN_UR.get(cat, cat)
+    if lang == "pa":
+        return CATEGORY_LABELS_PA.get(cat, cat)
+    return cat
+
 
 HISAAB_SYSTEM_PROMPT = """
 You are SarrafBot, a precision financial-data extraction engine for a WhatsApp
