@@ -195,6 +195,15 @@ async def dashboard_data(token: str):
     if not row:
         raise HTTPException(status_code=401, detail="Invalid or expired link")
     user = row["user_phone"]
+    lang_rows = (
+        supabase.table("user_prefs")
+        .select("lang")
+        .eq("user_phone", user)
+        .limit(1)
+        .execute()
+        .data
+    )
+    lang = lang_rows[0]["lang"] if lang_rows else "en"
     tier_rows = (
         supabase.table("subscriptions")
         .select("tier, expires_at")
