@@ -24,6 +24,7 @@ import matplotlib
 matplotlib.use("Agg")  # headless backend -- no display server on the server
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
+from PIL import Image, ImageDraw, ImageFont
 import mimetypes
 import csv
 import io
