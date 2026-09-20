@@ -1375,7 +1375,7 @@ def handle_get_budget(user: str, item: dict[str, Any], lang: str = "en") -> str:
         elif pct >= 80:
             flag = t(lang, "near_limit")
         lines.append(
-            t(lang, "budget_row", cat=cat, period=period, spent=spent,
+            t(lang, "budget_row", cat=_translate_category(cat, lang), period=period, spent=spent,
               limit=limit, when=t(lang, when_key), rem=remaining, pct=pct, flag=flag)
         )
     return "\n".join(lines)
@@ -1740,7 +1740,7 @@ def handle_set_budget(user: str, wamid: str, item: dict[str, Any], lang: str = "
     supabase.table("budgets").upsert(
         data, on_conflict="user_phone,category,period"
     ).execute()
-    return t(lang, "budget_set", amt=data["amount"], period=data["period"], cat=data["category"])
+    return t(lang, "budget_set", amt=data["amount"], period=data["period"], cat=_translate_category(data["category"], lang))
 
 
 def handle_set_reminder(user: str, wamid: str, item: dict[str, Any], lang: str = "en") -> str:
