@@ -308,6 +308,8 @@ async def dashboard_data(token: str):
         .data
         or []
     )
+    for r in expenses:
+        r["category"] = _translate_category(r.get("category") or "Other", lang)
     income_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "income")
     expense_total = sum((r.get("amount") or 0) for r in expenses if r.get("type") == "expense")
 
@@ -344,7 +346,7 @@ async def dashboard_data(token: str):
             or []
         )
         spent = sum((r.get("amount") or 0) for r in period_rows if r.get("type") == "expense")
-        budgets.append({**b, "spent": spent})
+        budgets.append({**b, "spent": spent, "category": _translate_category(b.get("category") or "Other", lang)})
     goals = (
         supabase.table("savings_goals")
         .select("goal_name, target_amount, saved_amount")
