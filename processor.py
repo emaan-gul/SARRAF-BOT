@@ -1895,6 +1895,33 @@ def background_worker(
             logger.info("Skipping duplicate wamid %s", wamid)
             return []
 
+
+        # If this is a referral signup link tap, the message text is
+        # exactly "REF-<referrer phone>" (pre-filled by the wa.me deep
+        # link) -- catch it before normal AI processing, since it is not
+        # natural language the model should try to interpret. Language is
+        # unknown at this point (this is likely the user's very first
+        # message, before any language signal exists), so the welcome
+        # reply defaults to English.
+        if cached_items is None and text and text.strip().upper().startswith("REF-"):
+            referrer_phone = text.strip()[4:].strip()
+            if referrer_phone.isdigit() and referrer_phone != user:
+                existing = (
+                    supabase.table("referrals")
+                    .select("id")
+                    .eq("referred_phone", user)
+                    .limit(1)
+                    .execute()
+                    .data
+                )
+                if not existing:
+                    supabase.table("referrals").insert({
+                        "referrer_phone": referrer_phone,
+                        "referred_phone": user,
+                        "status": "pending",
+                    }).execute()
+            send_message(user, t("en", "referral_welcome"))
+            return []
         # If we're waiting on a CSV/PDF choice from a previous "export"
         # request, check for that FIRST — a bare "csv"/"pdf" reply has no
         # context Gemini can use (it has no memory of the prior question).
