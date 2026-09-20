@@ -1696,11 +1696,20 @@ BOT_WHATSAPP_NUMBER = "15551561756"
 
 
 def handle_get_referral_link(user: str, lang: str = "en") -> str:
-    """Generate a shareable WhatsApp deep-link. When a friend taps it,
-    WhatsApp opens a chat with the bot pre-filled with a referral code
-    (their own phone number) -- caught and recorded before normal
-    message processing, in the webhook/background_worker entry point."""
-    link = f"https://wa.me/{BOT_WHATSAPP_NUMBER}?text=REF-{user}"
+    """Generate a fresh, single-use, unguessable referral code and a
+    shareable WhatsApp deep-link around it. Using a random code (not the
+    referrer's own phone number) means a referral can only be attributed
+    to someone who actually received the real link -- not anyone who
+    happens to know the referrer's number. A new code is generated every
+    time this is requested and consumed after one successful signup, so
+    the same link cannot be broadcast publicly to farm unlimited rewards
+    -- inviting a second friend means asking for a fresh link."""
+    code = secrets.token_urlsafe(6)
+    supabase.table("referral_codes").insert({
+        "user_phone": user,
+        "code": code,
+    }).execute()
+    link = f"https://wa.me/{BOT_WHATSAPP_NUMBER}?text=REF-{code}"
     return t(lang, "referral_link_sent", link=link)
 
 
