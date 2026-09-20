@@ -1498,24 +1498,31 @@ def handle_query(user: str, item: dict[str, Any], lang: str = "en") -> str:
 def _render_urdu_chart_pil(labels: list[str], values: list[float], title: str) -> bytes:
     """Render the Urdu spending chart with PIL instead of matplotlib.
     Matplotlib does not reliably shape/reorder Arabic-script text across
-    environments (confirmed directly: identical code rendered correctly in
-    one environment and garbled in another) -- PIL's raqm-based text layout
-    handles this correctly and consistently, using the same Amiri font
-    already bundled for PDF exports. Labels are passed RAW (not manually
-    reshaped) -- PIL/raqm shapes and reorders automatically; reshaping first
-    double-processes the text and corrupts it."""
+    environments. PIL alone has the same risk: its automatic complex-text
+    shaping depends on an OPTIONAL system library (libraqm) that may not be
+    present on every server -- without it, PIL silently falls back to no
+    shaping at all, which is what broke this the first time this fix was
+    tried. To make this reliable regardless of what's installed on the
+    server, layout_engine=BASIC is forced explicitly (never relies on
+    libraqm being present) and shaping/reordering is done manually via
+    arabic_reshaper + python-bidi (the same libraries already used for
+    Urdu PDF exports) before handing PIL already-shaped text to draw."""
     font_path = str(Path(__file__).parent / "Amiri-Regular.ttf")
     W, H = 900, max(320, 100 + len(labels) * 90)
     img = Image.new("RGB", (W, H), "#FAF8F2")
     draw = ImageDraw.Draw(img)
 
-    title_font = ImageFont.truetype(font_path, 28)
-    label_font = ImageFont.truetype(font_path, 24)
+    def load_font(size):
+        return ImageFont.truetype(font_path, size, layout_engine=ImageFont.Layout.BASIC)
+
+    title_font = load_font(28)
+    label_font = load_font(24)
     num_font = ImageFont.truetype(font_path, 16)
     axis_font = ImageFont.truetype(font_path, 14)
 
-    tb = draw.textbbox((0, 0), title, font=title_font)
-    draw.text(((W - (tb[2] - tb[0])) // 2, 24), title, font=title_font, fill="#1B2A41")
+    title_fixed = _fix_rtl(title)
+    tb = draw.textbbox((0, 0), title_fixed, font=title_font)
+    draw.text(((W - (tb[2] - tb[0])) // 2, 24), title_fixed, font=title_font, fill="#1B2A41")
 
     chart_left = 250
     chart_right = W - 90
@@ -1528,14 +1535,15 @@ def _render_urdu_chart_pil(labels: list[str], values: list[float], title: str) -
         bar_w = max(2, int((val / max_val) * (chart_right - chart_left)))
         draw.rectangle([chart_left, y, chart_left + bar_w, y + bar_h], fill="#1F5D42")
         draw.text((chart_left + bar_w + 10, y + bar_h // 2), f"{val:g}", font=num_font, fill="#1B2A41", anchor="lm")
-        lb = draw.textbbox((0, 0), label, font=label_font)
+        label_fixed = _fix_rtl(label)
+        lb = draw.textbbox((0, 0), label_fixed, font=label_font)
         label_w = lb[2] - lb[0]
         max_label_w = chart_left - 30
-        while label_w > max_label_w and len(label) > 3:
-            label = label[:-1]
-            lb = draw.textbbox((0, 0), label, font=label_font)
+        while label_w > max_label_w and len(label_fixed) > 3:
+            label_fixed = label_fixed[:-1]
+            lb = draw.textbbox((0, 0), label_fixed, font=label_font)
             label_w = lb[2] - lb[0]
-        draw.text((chart_left - 15 - label_w, y + bar_h // 2), label, font=label_font, fill="#1B2A41", anchor="lm")
+        draw.text((chart_left - 15 - label_w, y + bar_h // 2), label_fixed, font=label_font, fill="#1B2A41", anchor="lm")
         y += bar_h + gap
 
     axis_y = y - gap + bar_h + 20
@@ -1549,6 +1557,7 @@ def _render_urdu_chart_pil(labels: list[str], values: list[float], title: str) -
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     return buf.getvalue()
+
 
 
 def _render_expense_chart(labels: list[str], values: list[float], title: str, lang: str = "en") -> bytes:
