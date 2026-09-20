@@ -1100,6 +1100,10 @@ def handle_log(user: str, wamid: str, item: dict[str, Any], lang: str = "en") ->
     sign = "-" if data["type"] == "expense" else "+"
     lines = [t(lang, "logged", desc=description, sign=sign, amt=data["amount"])]
 
+
+    reward_msg = _maybe_reward_referral(user, lang)
+    if reward_msg:
+        lines.append(reward_msg)
     # Budget status (expenses only, and only if a budget exists for the category).
     if data["type"] == "expense":
         status = _budget_status(user, category, lang)
