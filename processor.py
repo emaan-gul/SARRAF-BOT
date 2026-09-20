@@ -1559,7 +1559,7 @@ def handle_visualize(user: str, item: dict[str, Any], lang: str = "en") -> str:
         label = r.get("category") or "other"
         grouped[label] = grouped.get(label, 0) + (r.get("amount") or 0)
     top = sorted(grouped.items(), key=lambda kv: kv[1], reverse=True)[:8]
-    labels = [label for label, _ in top]
+    labels = [_translate_category(label, lang) if lang in ("roman_ur", "pa") else label for label, _ in top]
     values = [amt for _, amt in top]
 
     chart_bytes = _render_expense_chart(labels, values, t(lang, "chart_title"), lang=lang)
