@@ -1698,6 +1698,78 @@ def handle_get_referral_link(user: str, lang: str = "en") -> str:
     message processing, in the webhook/background_worker entry point."""
     link = f"https://wa.me/{BOT_WHATSAPP_NUMBER}?text=REF-{user}"
     return t(lang, "referral_link_sent", link=link)
+
+
+def _extend_premium(phone: str, days: int) -> None:
+    """Extend a user's premium subscription by `days`, starting from
+    their current expiry if they already have premium time remaining, or
+    from now if they do not -- so a reward never shrinks an existing
+    subscription."""
+    existing = (
+        supabase.table("subscriptions")
+        .select("expires_at")
+        .eq("user_phone", phone)
+        .limit(1)
+        .execute()
+        .data
+    )
+    now = datetime.datetime.now(datetime.timezone.utc)
+    base = now
+    if existing and existing[0].get("expires_at"):
+        try:
+            current_expiry = datetime.datetime.fromisoformat(existing[0]["expires_at"].replace("Z", "+00:00"))
+            if current_expiry > now:
+                base = current_expiry
+        except Exception:  # noqa: BLE001
+            pass
+    new_expiry = (base + datetime.timedelta(days=days)).isoformat()
+    supabase.table("subscriptions").upsert({
+        "user_phone": phone,
+        "tier": "premium",
+        "expires_at": new_expiry,
+    }, on_conflict="user_phone").execute()
+
+
+def _maybe_reward_referral(user: str, lang: str) -> Optional[str]:
+    """If this user has a pending referral (they signed up via a friend's
+    link and this is their first real action), grant both the referrer
+    and the referred user 7 days of Premium and mark the referral as
+    rewarded. Returns a bonus message to append to the log confirmation,
+    or None if there is no pending referral -- so this stays a no-op on
+    every log after the first."""
+    ref = (
+        supabase.table("referrals")
+        .select("id, referrer_phone")
+        .eq("referred_phone", user)
+        .eq("status", "pending")
+        .limit(1)
+        .execute()
+        .data
+    )
+    if not ref:
+        return None
+    referrer_phone = ref[0]["referrer_phone"]
+
+    _extend_premium(user, 7)
+    _extend_premium(referrer_phone, 7)
+
+    supabase.table("referrals").update({
+        "status": "rewarded",
+        "rewarded_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }).eq("id", ref[0]["id"]).execute()
+
+    referrer_lang_rows = (
+        supabase.table("user_prefs")
+        .select("lang")
+        .eq("user_phone", referrer_phone)
+        .limit(1)
+        .execute()
+        .data
+    )
+    referrer_lang = referrer_lang_rows[0]["lang"] if referrer_lang_rows else "en"
+    send_message(referrer_phone, t(referrer_lang, "referral_reward_granted"))
+
+    return t(lang, "referral_reward_granted")
 def handle_list_transactions(user: str, item: dict[str, Any], lang: str = "en") -> str:
     """List individual recent transactions in chronological order (most
     recent first) -- distinct from `query`, which returns category-grouped
