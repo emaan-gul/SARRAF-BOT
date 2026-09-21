@@ -279,8 +279,8 @@ function budgetBarClass(spent, limit){
 
 function render(data){
   currentLang = data.lang || 'en';
-  document.body.className = currentLang === 'ur' ? 'lang-ur' : '';
-  document.documentElement.setAttribute('dir', currentLang === 'ur' ? 'rtl' : 'ltr');
+  document.body.className = (currentLang === 'ur' || currentLang === 'pa') ? 'lang-ur' : '';
+  document.documentElement.setAttribute('dir', (currentLang === 'ur' || currentLang === 'pa') ? 'rtl' : 'ltr');
   document.getElementById('backLink').textContent = t('back_to_whatsapp');
 
   document.getElementById('loadingMsg')?.remove();
