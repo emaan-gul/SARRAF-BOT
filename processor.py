@@ -412,7 +412,7 @@ RAW JSON ONLY. Nothing else.
 # --------------------------------------------------------------------------- #
 # Linguistic mirroring — reply templates (i18n)
 # --------------------------------------------------------------------------- #
-SUPPORTED_LANGS = ("en", "roman_ur", "ur", "pa")
+SUPPORTED_LANGS = ("en", "roman_ur", "ur", "pa", "roman_pa")
 
 L10N: dict[str, dict[str, str]] = {
     "en": {
