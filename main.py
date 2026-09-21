@@ -235,6 +235,25 @@ CATEGORY_LABELS_ROMAN_PA = {
     "Business & Work": "Karobar",
     "Other": "Hor",
 }
+CATEGORY_LABELS_PA = {
+    "Food & Dining": "کھانا پینا",
+    "Groceries": "گروسری",
+    "Transport": "ٹرانسپورٹ",
+    "Housing & Rent": "کرایہ تے رہائش",
+    "Utilities & Bills": "بلز",
+    "Shopping": "شاپنگ",
+    "Health & Medical": "صحت",
+    "Personal Care": "ذاتی دیکھ بھال",
+    "Entertainment": "تفریح",
+    "Education": "تعلیم",
+    "Travel": "سفر",
+    "Gifts & Donations": "تحفے تے خیرات",
+    "Family & Kids": "پریوار تے بچے",
+    "Financial": "مالی",
+    "Business & Work": "کاروبار",
+    "Other": "ہور",
+}
+
 
 
 def _translate_category(cat: str, lang: str) -> str:
