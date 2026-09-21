@@ -221,6 +221,8 @@ def _translate_category(cat: str, lang: str) -> str:
         return CATEGORY_LABELS_ROMAN_UR.get(cat, cat)
     if lang == "pa":
         return CATEGORY_LABELS_PA.get(cat, cat)
+    if lang == "roman_pa":
+        return CATEGORY_LABELS_ROMAN_PA.get(cat, cat)
     return cat
 
 
