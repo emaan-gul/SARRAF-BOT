@@ -1681,8 +1681,8 @@ def _render_expense_chart(labels: list[str], values: list[float], title: str, la
     match the brand, and return it as PNG bytes ready to upload. Urdu uses
     a separate PIL-based renderer (_render_urdu_chart_pil) instead of
     matplotlib -- see that function's docstring for why."""
-    if lang == "ur":
-        translated = [CATEGORY_LABELS_UR.get(lbl, lbl) for lbl in labels]
+    if lang in ("ur", "pa"):
+        translated = [_translate_category(lbl, lang) for lbl in labels]
         return _render_urdu_chart_pil(translated, values, title)
 
     fig, ax = plt.subplots(figsize=(6, max(3, 0.5 * len(labels) + 1)), dpi=150)
