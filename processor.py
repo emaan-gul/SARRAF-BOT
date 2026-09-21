@@ -383,18 +383,25 @@ LANGUAGE MIRRORING (REQUIRED):
     "en"       -> English
     "roman_ur" -> Urdu/Hindi written in Latin letters (e.g. "maine 500 kharch kiye")
     "ur"       -> Urdu in Arabic/Nastaliq script (e.g. "میں نے 500 خرچ کیے")
-    "pa"       -> Punjabi (spoken in a voice note, or written in Shahmukhi/Gurmukhi/Roman)
+    "roman_pa" -> Punjabi written in Latin letters (e.g. "maine 500 kharch keete")
+    "pa"       -> Punjabi in Shahmukhi (Arabic/Nastaliq) script (e.g. "میں نے 500 خرچ کیتے")
 - Mixed/code-switched messages: pick the DOMINANT language of the sentence
   structure, not the loanwords ("500 spent on chai" -> "en";
   "chai pe 500 lagaye" -> "roman_ur").
 - For voice notes, judge from the spoken language.
 - CRITICAL: if the message is written in Arabic/Nastaliq SCRIPT (Urdu
-  letters), the lang is ALWAYS "ur" -- even if it contains English
-  loanwords ALSO written in that script (e.g. "جم" for gym, "ممبرشپ" for
-  membership, "بجٹ" for budget). SCRIPT determines ur/roman_ur/en, never
-  whether individual words originated in English. Example: "ہر مہینے جم
-  کی ممبرشپ یاد دلانا" -> "ur" (NOT "roman_ur" or "en"), even though "جم"
-  and "ممبرشپ" are English loanwords.
+  letters), the lang is "ur" OR "pa" -- never "roman_ur"/"roman_pa"/"en"
+  for that message, even if it contains English loanwords ALSO written in
+  that script (e.g. "جم" for gym, "ممبرشپ" for membership, "بجٹ" for
+  budget). Shahmukhi Punjabi uses nearly the same alphabet as Urdu, so
+  "ur" vs "pa" in that script is decided by actual PUNJABI vocabulary and
+  grammar (e.g. "کیتے" instead of "کیے", sentence structure typical of
+  Punjabi), not by the script alone -- default to "ur" when genuinely
+  ambiguous, since it is the more common of the two. SCRIPT determines
+  the ur/pa vs roman_ur/roman_pa/en split, never whether individual
+  words originated in English. Example: "ہر مہینے جم کی ممبرشپ یاد
+  دلانا" -> "ur" (NOT "roman_ur" or "en"), even though "جم" and
+  "ممبرشپ" are English loanwords.
 - For "error" intents, write the "reason" text ITSELF in that same language
   (e.g. roman_ur -> "Maazrat, samajh nahi aya. Meharbani kar ke amount aur
   cheez saaf bata kar dobara bhejein.").
