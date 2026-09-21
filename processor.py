@@ -1990,15 +1990,15 @@ def background_worker(
 
 
 
+
+
         # If this is a referral signup link tap, the message text is
         # exactly "REF-<code>" (pre-filled by the wa.me deep link) --
         # catch it before normal AI processing, since it is not natural
         # language the model should try to interpret. The code is looked
         # up (not treated as a phone number) so only someone who actually
         # received the real link can be attributed, and it must still be
-        # unused -- each code works once. Welcome language defaults to
-        # the referrer's own known preference (a friend they invited very
-        # likely shares it), falling back to English if unknown.
+        # unused -- each code works once.
         if cached_items is None and text and text.strip().upper().startswith("REF-"):
             code = text.strip()[4:].strip()
             code_row = (
@@ -2009,7 +2009,6 @@ def background_worker(
                 .execute()
                 .data
             )
-            welcome_lang = "en"
             if code_row and not code_row[0]["used"]:
                 referrer_phone = code_row[0]["user_phone"]
                 if referrer_phone != user:
@@ -2021,7 +2020,19 @@ def background_worker(
                         .execute()
                         .data
                     )
+                    referrer_lang_rows = (
+                        supabase.table("user_prefs")
+                        .select("lang")
+                        .eq("user_phone", referrer_phone)
+                        .limit(1)
+                        .execute()
+                        .data
+                    )
+                    referrer_lang = referrer_lang_rows[0]["lang"] if referrer_lang_rows else "en"
                     if not existing:
+                        # Fresh referral -- record it, consume the code,
+                        # welcome the new user in the referrer's language
+                        # (a friend they invited very likely shares it).
                         supabase.table("referrals").insert({
                             "referrer_phone": referrer_phone,
                             "referred_phone": user,
@@ -2031,17 +2042,33 @@ def background_worker(
                             "used": True,
                             "used_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                         }).eq("id", code_row[0]["id"]).execute()
-                        lang_rows = (
+                        send_message(user, t(referrer_lang, "referral_welcome"))
+                        return []
+                    else:
+                        # This person already has a referral on record --
+                        # consume the code (validly used in an attempt)
+                        # but do not create a second referral or double-
+                        # reward. Tell both sides clearly why it did not
+                        # count -- this user is not new, so use their own
+                        # known language rather than assuming.
+                        supabase.table("referral_codes").update({
+                            "used": True,
+                            "used_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                        }).eq("id", code_row[0]["id"]).execute()
+                        own_lang_rows = (
                             supabase.table("user_prefs")
                             .select("lang")
-                            .eq("user_phone", referrer_phone)
+                            .eq("user_phone", user)
                             .limit(1)
                             .execute()
                             .data
                         )
-                        welcome_lang = lang_rows[0]["lang"] if lang_rows else "en"
-            send_message(user, t(welcome_lang, "referral_welcome"))
-            return []
+                        own_lang = own_lang_rows[0]["lang"] if own_lang_rows else "en"
+                        send_message(user, t(own_lang, "already_referred"))
+                        send_message(referrer_phone, t(referrer_lang, "referral_already_claimed"))
+                        return []
+            # Invalid or already-used code -- fall through to normal
+            # processing rather than falsely claiming a referral succeeded.
         # If we're waiting on a CSV/PDF choice from a previous "export"
         # request, check for that FIRST — a bare "csv"/"pdf" reply has no
         # context Gemini can use (it has no memory of the prior question).
