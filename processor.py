@@ -595,7 +595,7 @@ L10N: dict[str, dict[str, str]] = {
         "export_empty": "\u0627\u0628\u06be\u06cc \u0627\u06cc\u06a9\u0633\u067e\u0648\u0631\u0679 \u06a9\u0631\u0646\u06d2 \u06a9\u06d2 \u0644\u06cc\u06d2 \u06a9\u0686\u06be \u0646\u06c1\u06cc\u06ba \u2014 \u06a9\u0686\u06be \u0644\u06a9\u06be\u0627 \u06c1\u06cc \u0646\u06c1\u06cc\u06ba \u06af\u06cc\u0627\u06d4",
         "export_failed": "\u26a0\ufe0f \u0631\u067e\u0648\u0631\u0679 \u0628\u06be\u06cc\u062c\u062a\u06d2 \u0648\u0642\u062a \u0645\u0633\u0626\u0644\u06c1 \u06c1\u0648\u0627\u06d4 \u062f\u0648\u0628\u0627\u0631\u06c1 \u06a9\u0648\u0634\u0634 \u06a9\u0631\u06cc\u06ba\u06d4",
     },
-    "pa": {
+    "roman_pa": {
         "logged":          "✅ Likh leya: {desc} ({sign}{amt:g} PKR)",
         "balance_line":    "💰 Balance: {bal:g} PKR",
         "balance_full":    "💰 Tuhada balance: {bal:g} PKR\n• Kul aamdan: +{inc:g} PKR\n• Kul kharcha: -{exp:g} PKR",
