@@ -217,7 +217,7 @@ CATEGORY_LABELS_ROMAN_UR = {
     "Business & Work": "Karobar",
     "Other": "Deegar",
 }
-CATEGORY_LABELS_PA = {
+CATEGORY_LABELS_ROMAN_PA = {
     "Food & Dining": "Khana Peena",
     "Groceries": "Grocery",
     "Transport": "Transport",
